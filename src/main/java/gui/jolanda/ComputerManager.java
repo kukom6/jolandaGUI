@@ -18,6 +18,7 @@ import static java.lang.Math.round;
 
 public class ComputerManager {
 
+    //number of times not ms
     public static final int WAIT_LIMIT = 20;
     private Computer computer;
 
@@ -63,7 +64,7 @@ public class ComputerManager {
         }
 
         if (limit == 0) {
-            System.out.println(computer.getName() + " haven't been started in 60 second. Check status manually");
+            System.out.println(computer.getName() + " haven't been started in 60 second. Check status manually or try again.");
         } else {
             long stopTime = System.currentTimeMillis();
             long elapsedTime = stopTime - startTime;

@@ -13,7 +13,6 @@ import java.io.PrintStream;
 import java.util.Properties;
 
 import static gui.jolanda.utils.WaitUtils.pause;
-import static java.lang.Math.round;
 
 public class Window extends JDialog {
     private JPanel contentPane;
@@ -57,9 +56,6 @@ public class Window extends JDialog {
             public void componentShown(ComponentEvent e) {
                 Thread worker = new Thread() {
                     public void run() {
-                        statusLabel.setText("Checking status. Please wait");
-                        statusLabel.setBackground(Color.orange);
-
                         while(true) {
                             jolanda.checkStatus();
                             changeStatus(jolanda.isRunning());

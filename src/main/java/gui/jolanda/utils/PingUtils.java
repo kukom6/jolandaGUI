@@ -10,24 +10,25 @@ import java.util.concurrent.TimeUnit;
  * @author mhajas
  */
 public class PingUtils {
-    public static final int TIMEOUT = 20;
+    public static final int TIMEOUT = 40;
 
     /**
      * Check ping
      * Better way is via InetAddress class but it is not working correctly
      * @return true if pc is running otherwise false
-     * TODO: Probably won't work on Windows, it is necessary to change win command to send only one packet
      */
     public static Status pingComputer(Computer pc) {
         String pingCmd = getCommand(pc.getIpAddress());
-        boolean attempt1;
-        boolean attempt2;
         try {
+            boolean attempt1;
+            boolean attempt2;
+            boolean attempt3;
             Runtime r = Runtime.getRuntime();
             do {
                 attempt1 = r.exec(pingCmd).waitFor(TIMEOUT, TimeUnit.MILLISECONDS);
                 attempt2 = r.exec(pingCmd).waitFor(TIMEOUT, TimeUnit.MILLISECONDS);
-            } while(attempt1 != attempt2);
+                attempt3 = r.exec(pingCmd).waitFor(TIMEOUT, TimeUnit.MILLISECONDS);
+            } while(attempt1 != attempt2 && attempt3 == attempt1);
             return attempt1 ? Status.RUNNING : Status.OFFLINE;
         } catch (InterruptedException | IOException e) {
             throw new RuntimeException(e);
@@ -36,7 +37,7 @@ public class PingUtils {
 
     private static String getCommand(String host) {
         if (System.getProperty("os.name").contains("Win")) {
-            return "ping -n 1 -i 3 " + host;
+            return "ping -n 1 " + host;
         } else {
             return "ping -c 1 " + host;
         }
