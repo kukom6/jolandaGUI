@@ -10,7 +10,8 @@ import java.util.concurrent.TimeUnit;
  * @author mhajas
  */
 public class PingUtils {
-    public static final int TIMEOUT = 40;
+
+    public static final int TIMEOUT = System.getProperty("os.name").contains("Win") ? 60 : 40;
 
     /**
      * Check ping

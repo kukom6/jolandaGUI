@@ -56,6 +56,8 @@ public class Window extends JDialog {
             public void componentShown(ComponentEvent e) {
                 Thread worker = new Thread() {
                     public void run() {
+                        jolanda.checkStatus();
+                        refreshButton();
                         while(true) {
                             jolanda.checkStatus();
                             changeStatus(jolanda.isRunning());
