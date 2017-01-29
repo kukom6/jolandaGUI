@@ -1,9 +1,10 @@
+package gui.jolanda;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
-import java.util.logging.Level;
 
-public class main {
+public class Main {
 
     public static void main(String[] args) {
         Properties prop = new Properties();

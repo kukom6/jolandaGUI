@@ -1,10 +1,19 @@
+package gui.jolanda;
+
 import javax.swing.*;
 import javax.swing.text.DefaultCaret;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.Properties;
-import java.io.*;
-import java.util.concurrent.TimeUnit;
+
+import static gui.jolanda.utils.WaitUtils.pause;
+import static java.lang.Math.round;
 
 public class Window extends JDialog {
     private JPanel contentPane;
@@ -14,21 +23,22 @@ public class Window extends JDialog {
     private JLabel statusLabel;
     private JTextArea consoleApp;
     private JButton checkTempButton;
+    private JTextField commandTextField;
+    private JButton runButton;
     private Properties prop;
 
-    private PcManager pcManager;
-
+    private ComputerManager jolanda;
 
 
     public Window(Properties prop) {
 //        setTitle("Jolanda controller");
-        pcManager = new PcManager(prop.getProperty("ipAddress"),
+        jolanda = new ComputerManager(new Computer("Jolanda", prop.getProperty("ipAddress"),
                 prop.getProperty("macAddress"),
                 prop.getProperty("username"),
-                prop.getProperty("password"));
+                prop.getProperty("password")));
 
         this.statusLabel.setOpaque(true);
-        DefaultCaret caret = (DefaultCaret)consoleApp.getCaret();
+        DefaultCaret caret = (DefaultCaret) consoleApp.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
         this.consoleApp.setEnabled(false);
         this.consoleApp.setForeground(Color.black);
@@ -36,10 +46,10 @@ public class Window extends JDialog {
         setModal(true);
         getRootPane().setDefaultButton(start);
         pack();
-        setSize(600,500);
+        setSize(600, 500);
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 
-        PrintStream con=new PrintStream(new TextAreaOutputStream(consoleApp));
+        PrintStream con = new PrintStream(new TextAreaOutputStream(consoleApp));
         System.setOut(con);
         System.setErr(con);
 
@@ -47,20 +57,14 @@ public class Window extends JDialog {
             public void componentShown(ComponentEvent e) {
                 Thread worker = new Thread() {
                     public void run() {
-                        lockButton();
                         statusLabel.setText("Checking status. Please wait");
                         statusLabel.setBackground(Color.orange);
-                        if(pcManager.isRunning()){
-                            changeStatus(true);
-                        }else{
-                            changeStatus(false);
+
+                        while(true) {
+                            jolanda.checkStatus();
+                            changeStatus(jolanda.isRunning());
+                            pause(1000);
                         }
-                        SwingUtilities.invokeLater(new Runnable() {
-                            public void run() {
-                                refreshButton();
-                                setEnabled(true);
-                            }
-                        });
                     }
                 };
                 worker.start();
@@ -72,7 +76,7 @@ public class Window extends JDialog {
                 Thread worker = new Thread() {
                     public void run() {
                         lockButton();
-                        startPC();
+                        jolanda.powerOn();
                         // Report the result using invokeLater().
                         SwingUtilities.invokeLater(new Runnable() {
                             public void run() {
@@ -92,7 +96,7 @@ public class Window extends JDialog {
                 Thread worker = new Thread() {
                     public void run() {
                         lockButton();
-                        shutDownPC();
+                        jolanda.powerOff();
                         // Report the result using invokeLater().
                         SwingUtilities.invokeLater(new Runnable() {
                             public void run() {
@@ -109,21 +113,8 @@ public class Window extends JDialog {
 
         checkStatusButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                Thread worker = new Thread() {
-                    public void run() {
-                        statusLabel.setText("Checking status. Please wait");
-                        statusLabel.setBackground(Color.orange);
-                        checkStatusButton.setEnabled(false);
-                        changeStatus(pcManager.isRunning());
-                        // Report the result using invokeLater().
-                        SwingUtilities.invokeLater(new Runnable() {
-                            public void run() {
-                                checkStatusButton.setEnabled(true);
-                            }
-                        });
-                    }
-                };
-                worker.start();
+                jolanda.checkStatus();
+                changeStatus(jolanda.isRunning());
             }
         });
 
@@ -133,7 +124,7 @@ public class Window extends JDialog {
                     public void run() {
                         checkTempButton.setText("Checking temperature");
                         checkTempButton.setEnabled(false);
-                        checkTemp();
+                        jolanda.checkTemperature();
                         // Report the result using invokeLater().
                         SwingUtilities.invokeLater(new Runnable() {
                             public void run() {
@@ -146,80 +137,50 @@ public class Window extends JDialog {
                 worker.start();
             }
         });
-    }
 
-    /**
-     * Start jolanda
-     */
-    private void startPC() {
-        if(pcManager.isRunning()){
-            System.out.println("Jolanda is already running");
-            return;
-        }
-        this.statusLabel.setText("Jolanda will be started. Please wait");
-        this.statusLabel.setBackground(Color.orange);
-        pcManager.powerOn();
-        try {
-            Thread.sleep(60000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        if(!pcManager.isRunning()){
-            this.statusLabel.setText("Jolanda wasn't been started in 60 second. Check status manually");
-        }else{
-            changeStatus(true);
-        }
-    }
-
-    /**
-     * Shutdown jolanda
-     */
-    private void shutDownPC() {
-        if(!pcManager.isRunning()){
-            System.out.println("Jolanda is already offline");
-            return;
-        }
-        this.statusLabel.setText("Jolanda will be shutdown. Please wait");
-        this.statusLabel.setBackground(Color.ORANGE);
-        pcManager.powerOff();
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        changeStatus(false);
+        runButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Thread worker = new Thread(() -> {
+                    runButton.setText("Running command");
+                    runButton.setEnabled(false);
+                    jolanda.executeCommand(commandTextField.getText());
+                    // Report the result using invokeLater().
+                    SwingUtilities.invokeLater(new Runnable() {
+                        public void run() {
+                            runButton.setText("Run");
+                            runButton.setEnabled(true);
+                        }
+                    });
+                });
+                worker.start();
+            }
+        });
     }
 
     /**
      * Change status in notification
      */
-    private void changeStatus(boolean isRunning){
-        if(isRunning){
+    private synchronized void changeStatus(boolean isRunning) {
+        if (isRunning) {
             this.statusLabel.setText("Jolanda is running");
             this.statusLabel.setBackground(Color.GREEN);
-        }else{
+        } else {
             this.statusLabel.setText("Jolanda is not running");
             this.statusLabel.setBackground(Color.RED);
         }
     }
 
     /**
-     * Check jolanda temp
-     */
-    private void checkTemp(){
-        pcManager.checkTemperature();
-    }
-
-    /**
      * Enable and disable buttons
      */
-    private void refreshButton(){
-        if(pcManager.isRunning()){
+    private void refreshButton() {
+        if (jolanda.isRunning()) {
             start.setEnabled(false);
             shutDown.setEnabled(true);
             checkTempButton.setEnabled(true);
             checkStatusButton.setEnabled(true);
-        }else{
+        } else {
             start.setEnabled(true);
             shutDown.setEnabled(false);
             checkTempButton.setEnabled(false);
@@ -230,12 +191,14 @@ public class Window extends JDialog {
     /**
      * Lock button when thread is running
      */
-    private void lockButton(){
+    private void lockButton() {
         start.setEnabled(false);
         shutDown.setEnabled(false);
         checkTempButton.setEnabled(false);
         checkStatusButton.setEnabled(false);
     }
+
+
     /**
      * Help code for console in application
      */
@@ -246,11 +209,11 @@ public class Window extends JDialog {
          * Creates a new instance of TextAreaOutputStream which writes
          * to the specified instance of javax.swing.JTextArea control.
          *
-         * @param control   A reference to the javax.swing.JTextArea
-         *                  control to which the output must be redirected
-         *                  to.
+         * @param control A reference to the javax.swing.JTextArea
+         *                control to which the output must be redirected
+         *                to.
          */
-        public TextAreaOutputStream( JTextArea control ) {
+        public TextAreaOutputStream(JTextArea control) {
             textControl = control;
         }
 
@@ -258,12 +221,12 @@ public class Window extends JDialog {
          * Writes the specified byte as a character to the
          * javax.swing.JTextArea.
          *
-         * @param   b   The byte to be written as character to the
-         *              JTextArea.
+         * @param b The byte to be written as character to the
+         *          JTextArea.
          */
-        public void write( int b ) throws IOException {
+        public void write(int b) throws IOException {
             // append the data as characters to the JTextArea control
-            textControl.append( String.valueOf( ( char )b ) );
+            textControl.append(String.valueOf((char) b));
         }
     }
 }
