@@ -14,7 +14,7 @@ import java.util.Properties;
 
 import static gui.jolanda.utils.WaitUtils.pause;
 
-public class Window extends JDialog {
+public class Window extends JFrame {
     private JPanel contentPane;
     private JButton start;
     private JButton shutDown;
@@ -28,29 +28,31 @@ public class Window extends JDialog {
 
     private ComputerManager jolanda;
 
-
     public Window(Properties prop) {
-//        setTitle("Jolanda controller");
         jolanda = new ComputerManager(new Computer("Jolanda", prop.getProperty("ipAddress"),
                 prop.getProperty("macAddress"),
                 prop.getProperty("username"),
                 prop.getProperty("password")));
+        initUI();
+        PrintStream con = new PrintStream(new TextAreaOutputStream(consoleApp));
+        System.setOut(con);
+        System.setErr(con);
+    }
 
+    /**
+     * Initialization UI
+     */
+    private void initUI() {
+        setTitle("Jolanda GUI");
+        setSize(600, 300);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
         this.statusLabel.setOpaque(true);
         DefaultCaret caret = (DefaultCaret) consoleApp.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
         this.consoleApp.setEnabled(false);
         this.consoleApp.setForeground(Color.black);
         setContentPane(contentPane);
-        setModal(true);
-        getRootPane().setDefaultButton(start);
-        pack();
-        setSize(600, 500);
-        setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-
-        PrintStream con = new PrintStream(new TextAreaOutputStream(consoleApp));
-        System.setOut(con);
-        System.setErr(con);
 
         this.addComponentListener(new ComponentAdapter() {
             public void componentShown(ComponentEvent e) {
@@ -154,6 +156,18 @@ public class Window extends JDialog {
                 worker.start();
             }
         });
+
+        commandTextField.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Thread worker = new Thread(() -> {
+                    runButton.doClick();
+                });
+                worker.start();
+            }
+        });
+
+
     }
 
     /**
