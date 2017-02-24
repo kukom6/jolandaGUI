@@ -77,7 +77,7 @@ public class NetworkUtils {
 
     public static String sendWOL(Computer computer) {
         try {
-            return sendWOL(cleanMac(computer.getMacAddress()), computer.getIpAddress(), PORT);
+            return sendWOL(cleanMac(computer.getMacAddress()),"192.168.0.255", PORT);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
