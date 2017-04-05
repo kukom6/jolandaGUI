@@ -24,7 +24,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>Main</mainClass>
+                            <mainClass>gui.jolanda.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

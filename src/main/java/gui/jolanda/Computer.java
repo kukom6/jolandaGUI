@@ -10,14 +10,16 @@ public class Computer {
     private String name;
     private String ipAddress;
     private String macAddress;
+    private String broadCastAddress;
     private String userName;
     private String password;
     private Status status;
 
-    public Computer(String name, String ipAddress, String macAddress, String userName, String password) {
+    public Computer(String name, String ipAddress, String macAddress, String broadCastAddress, String userName, String password) {
         this.name = name;
         this.ipAddress = ipAddress;
         this.macAddress = macAddress;
+        this.broadCastAddress = broadCastAddress;
         this.userName = userName;
         this.password = password;
     }
@@ -44,6 +46,14 @@ public class Computer {
 
     public void setMacAddress(String macAddress) {
         this.macAddress = macAddress;
+    }
+
+    public String getBroadCastAddress() {
+        return broadCastAddress;
+    }
+
+    public void setBroadCastAddress(String broadCast) {
+        this.broadCastAddress = broadCast;
     }
 
     public String getUserName() {

@@ -2,4 +2,3 @@ out/
 target/
 .idea/
 *.iml
-src/main/resources/jolanda.properties

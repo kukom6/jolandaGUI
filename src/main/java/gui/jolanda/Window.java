@@ -31,6 +31,7 @@ public class Window extends JFrame {
     public Window(Properties prop) {
         jolanda = new ComputerManager(new Computer("Jolanda", prop.getProperty("ipAddress"),
                 prop.getProperty("macAddress"),
+                prop.getProperty("broadCastAddress"),
                 prop.getProperty("username"),
                 prop.getProperty("password")));
         initUI();
